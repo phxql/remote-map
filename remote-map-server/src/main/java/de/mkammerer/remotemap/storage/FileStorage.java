@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -57,6 +58,7 @@ public class FileStorage implements Storage {
         Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");
         LOGGER.debug("Saving storage to {} ...", file.toAbsolutePath());
 
+        long start = System.nanoTime();
         int size;
         // Write into temp file
         try (ObjectOutputStream stream = new ObjectOutputStream(Files.newOutputStream(tempFile))) {
@@ -77,8 +79,9 @@ public class FileStorage implements Storage {
         Files.deleteIfExists(file);
         // Rename temp file to destination file
         Files.move(tempFile, file);
+        long end = System.nanoTime();
 
-        LOGGER.debug("Stored {} entries", size);
+        LOGGER.debug("Stored {} entries in {}", size, Duration.ofNanos(end - start));
     }
 
     @Override
@@ -89,6 +92,7 @@ public class FileStorage implements Storage {
         dirty.set(false);
 
         int size = 0;
+        long start = System.nanoTime();
         try (ObjectInputStream stream = new ObjectInputStream(Files.newInputStream(file))) {
             map.clear();
 
@@ -103,8 +107,9 @@ public class FileStorage implements Storage {
                 size += 1;
             }
         }
+        long end = System.nanoTime();
 
-        LOGGER.debug("Loaded {} entries", size);
+        LOGGER.debug("Loaded {} entries in {}", size, Duration.ofNanos(end - start));
     }
 
     @Override
@@ -117,11 +122,16 @@ public class FileStorage implements Storage {
         assert length >= 0;
 
         byte[] buffer = new byte[length];
+        int offset = 0;
 
-        int read = stream.read(buffer);
-        if (read != length) {
-            throw new IOException(String.format("Tried to read %d bytes, got only %d", length, read));
+        while (offset < length) {
+            int read = stream.read(buffer, offset, length - offset);
+            if (read == -1) {
+                throw new IOException(String.format("Unexpected end of stream at offset %d of length %d", offset, length));
+            }
+            offset += read;
         }
+
         return buffer;
     }
 }
