@@ -39,7 +39,7 @@ class Client {
 
     private static void run(RemoteMapGrpc.RemoteMapBlockingStub client) {
         int start = 0;
-        int end = 1_000_000;
+        int end = 100_000;
 
         put(client, start, end);
 

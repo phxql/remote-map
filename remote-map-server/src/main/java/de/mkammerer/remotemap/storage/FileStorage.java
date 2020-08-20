@@ -54,10 +54,12 @@ public class FileStorage implements Storage {
             return;
         }
 
+        Path tempFile = file.resolveSibling(file.getFileName() + ".tmp");
         LOGGER.debug("Saving storage to {} ...", file.toAbsolutePath());
 
         int size;
-        try (ObjectOutputStream stream = new ObjectOutputStream(Files.newOutputStream(file))) {
+        // Write into temp file
+        try (ObjectOutputStream stream = new ObjectOutputStream(Files.newOutputStream(tempFile))) {
             Set<Map.Entry<ByteArray, byte[]>> entries = map.entrySet();
             size = entries.size();
             for (Map.Entry<ByteArray, byte[]> entry : entries) {
@@ -71,6 +73,10 @@ public class FileStorage implements Storage {
                 stream.write(value);
             }
         }
+        // Delete old destination file
+        Files.deleteIfExists(file);
+        // Rename temp file to destination file
+        Files.move(tempFile, file);
 
         LOGGER.debug("Stored {} entries", size);
     }
