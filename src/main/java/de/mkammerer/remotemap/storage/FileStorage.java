@@ -13,19 +13,25 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FileStorage implements Storage {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileStorage.class);
 
-    private final ConcurrentMap<ByteArray, byte[]> map = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ByteArray, byte[]> map;
+    private final AtomicBoolean dirty = new AtomicBoolean(false);
+
+    public FileStorage(ConcurrentMap<ByteArray, byte[]> map) {
+        this.map = Objects.requireNonNull(map, "map");
+    }
 
     @Override
     public void put(byte[] key, byte[] value) {
         Objects.requireNonNull(value, "value");
 
         map.put(ByteArray.of(key), value);
+        dirty.set(true);
     }
 
     @Override
@@ -36,11 +42,18 @@ public class FileStorage implements Storage {
     @Override
     public void delete(byte[] key) {
         map.remove(ByteArray.of(key));
+        dirty.set(true);
     }
 
     @Override
     public void save(Path file) throws IOException {
         Objects.requireNonNull(file, "file");
+
+        if (!dirty.compareAndSet(true, false)) {
+            // No changes, no need to save file
+            return;
+        }
+
         LOGGER.debug("Saving storage to {} ...", file.toAbsolutePath());
 
         int size;
@@ -66,6 +79,8 @@ public class FileStorage implements Storage {
     public void load(Path file) throws IOException {
         Objects.requireNonNull(file, "file");
         LOGGER.debug("Loading storage from {} ...", file.toAbsolutePath());
+
+        dirty.set(false);
 
         int size = 0;
         try (ObjectInputStream stream = new ObjectInputStream(Files.newInputStream(file))) {
