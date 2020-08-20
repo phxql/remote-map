@@ -67,6 +67,10 @@ class Client {
             ByteString key = ByteString.copyFromUtf8(Integer.toString(i));
 
             GetResponse response = client.get(GetRequest.newBuilder().setKey(key).build());
+
+            if (!response.getValue().equals(key)) {
+                throw new AssertionError("Read value is wrong");
+            }
         }
         endTime = System.nanoTime();
         LOGGER.info("Get: {}", Duration.ofNanos(endTime - startTime));
