@@ -1,0 +1,9 @@
+# Application
+storage.bin
+
+# IntelliJ
+.idea/
+*.iml
+
+# Maven
+target/
