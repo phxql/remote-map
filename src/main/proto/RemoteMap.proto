@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "de.mkammerer.remotemap.grpc.generated";
+
+service RemoteMap {
+    rpc put (PutRequest) returns (PutResponse) {}
+    rpc get (GetRequest) returns (GetResponse) {}
+    rpc delete (DeleteRequest) returns (DeleteResponse) {}
+}
+
+message PutRequest {
+    bytes key = 1;
+    bytes value = 2;
+}
+
+message PutResponse {
+}
+
+message GetRequest {
+    bytes key = 1;
+}
+
+message GetResponse {
+    bytes value = 1;
+}
+
+message DeleteRequest {
+    bytes key = 1;
+}
+
+message DeleteResponse {
+}
