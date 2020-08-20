@@ -3,7 +3,6 @@ package de.mkammerer.remotemap;
 import de.mkammerer.remotemap.grpc.RemoteMapService;
 import de.mkammerer.remotemap.storage.FileStorage;
 import de.mkammerer.remotemap.storage.Storage;
-import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +16,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class Main {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+public class Server {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
     private static final int PORT = 12345;
     private static final Path STORAGE_FILE = Paths.get("storage.bin");
@@ -34,7 +33,7 @@ public class Main {
             ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
             scheduler.scheduleWithFixedDelay(() -> saveStorage(storage), SAVE_DELAY_SECONDS, SAVE_DELAY_SECONDS, TimeUnit.SECONDS);
 
-            Server server = ServerBuilder.forPort(PORT)
+            io.grpc.Server server = ServerBuilder.forPort(PORT)
                 .directExecutor()
                 .addService(new RemoteMapService(storage))
                 .build();
@@ -59,7 +58,7 @@ public class Main {
         }
     }
 
-    private static void stop(Server server, ScheduledExecutorService scheduler) {
+    private static void stop(io.grpc.Server server, ScheduledExecutorService scheduler) {
         LOGGER.debug("Shutting down server ...");
         try {
             server.shutdown().awaitTermination(10, TimeUnit.SECONDS);
